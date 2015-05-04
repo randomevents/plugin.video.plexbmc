@@ -585,6 +585,7 @@ class plex_section:
         self.art = None
         self.type = None
         self.location = "local"
+        self.skinID = None
 
         if data is not None:
             self.populate(data)
@@ -649,3 +650,9 @@ class plex_section:
         if self.type == 'photo':
             return True
         return False
+
+    def get_skinID(self):
+        return self.skinID
+
+    def set_skinID(self, data=None):
+        self.skinID = data
