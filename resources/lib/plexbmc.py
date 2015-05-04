@@ -2771,6 +2771,8 @@ def amberskin():
 
         for section in server.get_sections():
 
+            section.set_skinID(sectionCount)
+
             printDebug.debug("=Enter amberskin section=")
             printDebug.debug(str(section.__dict__))
             printDebug.debug("=/section=")
@@ -3029,42 +3031,55 @@ def fullShelf(server_list={}):
             continue
 
         for section in server_details.get_sections():
+            if xbmc.getCondVisibility("Skin.HasSetting(hide.plexbmc."+str(section.get_skinID())+".title)") == 0:
+                if settings.get_setting('homeshelf') == '0' or settings.get_setting('homeshelf') == '2':
 
-            if settings.get_setting('homeshelf') == '0' or settings.get_setting('homeshelf') == '2':
+                    tree = server_details.get_recently_added(section=section.get_key(), size=15, hide_watched=settings.get_setting('hide_watched_recent_items'))
 
-                tree = server_details.get_recently_added(section=section.get_key(), size=15, hide_watched=settings.get_setting('hide_watched_recent_items'))
+                    maxItem_recent_ondeck = 15
+                    recent_containerSize = maxItem_recent_ondeck
+                    if section.is_show():
+                        recent_containerSize = 50
 
-                if tree is None:
-                    printDebug.debug("PLEXBMC -> RecentlyAdded items not found on: %s" % server_details.get_url_location())
-                    continue
+                    tree = server_details.get_recently_added(section=section.get_key(), size=recent_containerSize)
 
-                libraryuuid = tree.get("librarySectionUUID",'').encode('utf-8')
+                    if tree is None:
+                        printDebug.debug("PLEXBMC -> RecentlyAdded items not found on: %s" % server_details.get_url_location())
+                        continue
 
-                ep_helper = {}  # helper season counter
-                for eachitem in tree:
+                    libraryuuid = tree.get("librarySectionUUID",'').encode('utf-8')
 
-                    if eachitem.get("type", "") == "episode":
-                        key = int(eachitem.get("parentRatingKey"))  # season identifier
+                    ep_helper = {}  # helper season counter
 
-                        if key in ep_helper:
-                            continue
+                    recent_containerCounter=0
+                    for eachitem in tree:
 
-                        ep_helper[key] = key  # use seasons as dict key so we can check
+                        if eachitem.get("type", "") == "episode":
+                            key = int(eachitem.get("parentRatingKey"))  # season identifier
 
-                    recent_list.append((eachitem, server_details, libraryuuid))
+                            if key in ep_helper:
+                                continue
 
-            if settings.get_setting('homeshelf') == '1' or settings.get_setting('homeshelf') == '2':
+                            if recent_containerCounter == maxItem_recent_ondeck:
+                                continue
 
-                tree = server_details.get_ondeck(section=section.get_key(),size=15)
+                            ep_helper[key] = key  # use seasons as dict key so we can check
+                            recent_containerCounter += 1
 
-                libraryuuid = tree.get("librarySectionUUID",'').encode('utf-8')
+                        recent_list.append((eachitem, server_details, libraryuuid))
 
-                if tree is None:
-                    print ("PLEXBMC -> OnDeck items not found on: " + server_details.get_url_location(), False)
-                    continue
+                if settings.get_setting('homeshelf') == '1' or settings.get_setting('homeshelf') == '2':
 
-                for eachitem in tree:
-                    ondeck_list.append((eachitem, server_details, libraryuuid))
+                    tree = server_details.get_ondeck(section=section.get_key(),size=maxItem_recent_ondeck)
+
+                    libraryuuid = tree.get("librarySectionUUID",'').encode('utf-8')
+
+                    if tree is None:
+                        print ("PLEXBMC -> OnDeck items not found on: " + server_details.get_url_location(), False)
+                        continue
+
+                    for eachitem in tree:
+                        ondeck_list.append((eachitem, server_details, libraryuuid))
 
     printDebug.debugplus("Recent object is: %s" % recent_list)
     printDebug.debugplus("ondeck object is: %s" % ondeck_list)
